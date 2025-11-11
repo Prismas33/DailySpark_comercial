@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Calendar, Clock, Send, Image, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, Send, Image, X, Sparkles } from 'lucide-react';
+import AIContentGenerator from '@/components/AIContentGenerator';
+import { CacheService, CACHE_KEYS } from '@/lib/cacheService';
 
 type Platform = 'linkedin' | 'x' | 'facebook' | 'instagram';
 
@@ -18,6 +20,16 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
   const [postType, setPostType] = useState<'post' | 'reel'>('post');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showAI, setShowAI] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+
+  // Load AI prompt from cache/settings
+  useEffect(() => {
+    const cachedSettings = CacheService.get<{ aiPrompt: string }>(CACHE_KEYS.AI_PROMPT);
+    if (cachedSettings?.aiPrompt) {
+      setAiPrompt(cachedSettings.aiPrompt);
+    }
+  }, []);
 
   const platforms = [
     { id: 'linkedin' as Platform, name: 'LinkedIn', icon: '💼', enabled: true },
@@ -98,27 +110,37 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-2xl border border-gray-800 p-6 shadow-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Calendar className="w-6 h-6 text-emerald-400" />
-        <h3 className="text-2xl font-bold text-white">Schedule Post</h3>
+    <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl border border-gray-800 p-4 shadow-2xl">
+      <div className="flex items-center gap-2 mb-4">
+        <Calendar className="w-5 h-5 text-emerald-400" />
+        <h3 className="text-lg font-bold text-white">Schedule Post</h3>
       </div>
 
       {/* Message */}
       {message && (
-        <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${
+        <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
           message.type === 'success' 
             ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400' 
             : 'bg-red-500/10 border border-red-500/30 text-red-400'
         }`}>
           {message.type === 'success' ? '✓' : '✕'}
-          <span>{message.text}</span>
+          <span className="text-sm">{message.text}</span>
         </div>
       )}
 
-      {/* Content */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-300 mb-3">Content</label>
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <label className="block text-sm font-medium text-gray-300">Content</label>
+          {content.trim() && (
+            <button
+              onClick={() => setShowAI(true)}
+              className="text-xs px-2 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/30 text-emerald-300 rounded-md flex items-center gap-1 transition-all"
+            >
+              <Sparkles className="w-3 h-3" />
+              Improve with AI
+            </button>
+          )}
+        </div>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -132,7 +154,7 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
       </div>
 
       {/* Date & Time */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-3">
             <Calendar className="w-4 h-4 inline mr-2" />
@@ -169,7 +191,7 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
       </div>
 
       {/* Media URL (Optional) */}
-      <div className="mb-6">
+      <div className="mb-4">
         <label className="block text-sm font-medium text-gray-300 mb-3">
           <Image className="w-4 h-4 inline mr-2" />
           Image or Video URL (Optional)
@@ -184,27 +206,29 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
       </div>
 
       {/* Platform Selection */}
-      <div className="mb-6">
+      <div className="mb-4">
         <label className="block text-sm font-medium text-gray-300 mb-3">Platforms</label>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {platforms.map((platform) => (
             <button
               key={platform.id}
               onClick={() => platform.enabled && togglePlatform(platform.id)}
               disabled={!platform.enabled}
-              className={`p-4 rounded-xl border-2 transition-all transform ${
-                platform.enabled ? 'hover:scale-105' : 'opacity-50 cursor-not-allowed'
+              className={`px-3 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
+                platform.enabled ? '' : 'opacity-50 cursor-not-allowed'
               } ${
                 selectedPlatforms.includes(platform.id) && platform.enabled
                   ? 'border-emerald-400 bg-emerald-400/10 text-emerald-300 shadow-lg shadow-emerald-500/20'
                   : 'border-gray-700 bg-gray-900/30 text-gray-400 hover:border-gray-600'
               }`}
             >
-              <div className="text-2xl mb-2">{platform.icon}</div>
-              <div className="text-xs font-medium">{platform.name}</div>
-              {!platform.enabled && (
-                <div className="text-xs text-orange-400 mt-1">Em breve</div>
-              )}
+              <div className="text-2xl flex-shrink-0">{platform.icon}</div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="text-sm font-medium truncate">{platform.name}</div>
+                {!platform.enabled && (
+                  <div className="text-[10px] text-orange-400">Em breve</div>
+                )}
+              </div>
             </button>
           ))}
         </div>
@@ -212,7 +236,7 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
 
       {/* Post Type (for Facebook/Instagram) */}
       {(selectedPlatforms.includes('facebook') || selectedPlatforms.includes('instagram')) && (
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="block text-sm font-medium text-gray-300 mb-3">Post Type</label>
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -259,6 +283,16 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
           </>
         )}
       </button>
+
+      {/* AI Content Generator Modal */}
+      {showAI && (
+        <AIContentGenerator
+          originalContent={content}
+          userPrompt={aiPrompt}
+          onAcceptSuggestion={(newContent) => setContent(newContent)}
+          onClose={() => setShowAI(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { CacheService, CACHE_KEYS, CACHE_TTL } from '@/lib/cacheService';
 
 interface QueuedPost {
   id: string;
@@ -42,11 +43,22 @@ const QueueViewer: React.FC = () => {
   const loadQueue = async () => {
     setLoading(true);
     try {
+      // Try cache first
+      const cachedQueue = CacheService.get<QueuedPost[]>(CACHE_KEYS.SOCIAL_QUEUE);
+      if (cachedQueue) {
+        setPosts(cachedQueue);
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/social-media-queue');
       const data = await response.json();
       
       if (data.success) {
-        setPosts(data.posts || []);
+        const queuedPosts = data.posts || [];
+        setPosts(queuedPosts);
+        // Cache for 20 minutes
+        CacheService.set(CACHE_KEYS.SOCIAL_QUEUE, queuedPosts, 1200);
       } else {
         setMessage({ type: 'error', text: data.error || 'Failed to load queue' });
       }

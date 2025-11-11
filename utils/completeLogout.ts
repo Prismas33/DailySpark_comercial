@@ -72,6 +72,19 @@ export async function performCompleteLogout(options: CompleteLogoutOptions = {})
     localStorageKeysToRemove.forEach(key => {
       localStorage.removeItem(key);
     });
+
+    // 2.1 Clear all cache entries
+    try {
+      const allKeys = Object.keys(localStorage);
+      allKeys.forEach(key => {
+        if (key.startsWith('dailyspark_cache_')) {
+          localStorage.removeItem(key);
+        }
+      });
+      if (verbose) console.log("✅ Cache cleared");
+    } catch (cacheError) {
+      if (verbose) console.warn("⚠️ Could not clear cache:", cacheError);
+    }
     
     if (verbose) console.log("✅ localStorage cleared");
 

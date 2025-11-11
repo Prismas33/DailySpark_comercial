@@ -1,6 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, X } from 'lucide-react';
+import AIContentGenerator from '@/components/AIContentGenerator';
+import ImageGeneratorModal from '@/components/ImageGeneratorModal';
+import { CacheService, CACHE_KEYS } from '@/lib/cacheService';
 
 type SocialMediaPlatform = 'linkedin' | 'x' | 'facebook' | 'instagram';
 
@@ -30,6 +34,24 @@ const ManualPost: React.FC = () => {
   const [dragOver, setDragOver] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [showAI, setShowAI] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+  const [visualSuggestion, setVisualSuggestion] = useState<string>('');
+  const [showImageGen, setShowImageGen] = useState(false);
+
+  // Load AI prompt from cache/settings
+  useEffect(() => {
+    const cachedSettings = CacheService.get<{ aiPrompt: string }>(CACHE_KEYS.AI_PROMPT);
+    if (cachedSettings?.aiPrompt) {
+      setAiPrompt(cachedSettings.aiPrompt);
+      console.log('📝 ManualPost: AI prompt loaded from cache', {
+        length: cachedSettings.aiPrompt.length,
+        preview: cachedSettings.aiPrompt.substring(0, 50) + '...'
+      });
+    } else {
+      console.log('⚠️ ManualPost: No AI prompt in cache');
+    }
+  }, []);
 
   // Platform toggle handler
   const togglePlatform = (platform: SocialMediaPlatform) => {
@@ -275,9 +297,9 @@ const ManualPost: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl border border-gray-700/50 shadow-xl p-6">
-      <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-6 flex items-center gap-2">
-        <span className="text-2xl">✍️</span>
+    <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl border border-gray-700/50 shadow-xl p-4">
+      <h3 className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+        <span className="text-xl">✍️</span>
         Post Now
       </h3>
       
@@ -293,10 +315,28 @@ const ManualPost: React.FC = () => {
       )}
 
       {/* Post Content */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-300 mb-2">Content</label>
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-sm font-medium text-gray-300">Content</label>
+          {content.trim() && (
+            <button
+              onClick={() => {
+                console.log('🎯 Opening AI modal with prompt:', {
+                  hasPrompt: !!aiPrompt,
+                  promptLength: aiPrompt?.length || 0,
+                  promptPreview: aiPrompt ? aiPrompt.substring(0, 50) + '...' : 'EMPTY'
+                });
+                setShowAI(true);
+              }}
+              className="text-xs px-2 py-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 border border-emerald-500/30 text-emerald-300 rounded-md flex items-center gap-1 transition-all"
+            >
+              <Sparkles className="w-3 h-3" />
+              Improve with AI
+            </button>
+          )}
+        </div>
         <textarea
-          className="w-full h-40 p-4 bg-gray-800/50 border border-gray-600/50 rounded-xl text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none resize-none transition-all"
+          className="w-full h-32 p-3 bg-gray-800/50 border border-gray-600/50 rounded-lg text-white placeholder-gray-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none resize-none transition-all"
           placeholder="What do you want to share?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -307,28 +347,87 @@ const ManualPost: React.FC = () => {
         </div>
       </div>
 
+      {/* Visual Suggestion from AI */}
+      {visualSuggestion && (
+        <div className="mb-4 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="flex-1">
+              <label className="flex items-center gap-2 text-sm font-medium text-purple-300 mb-1">
+                🎨 AI Visual Suggestion
+                <span className="text-xs text-purple-400 font-normal">(Click to generate image)</span>
+              </label>
+              <p className="text-sm text-gray-300 bg-gray-800/50 p-2 rounded border border-gray-600/50 whitespace-pre-wrap">
+                {visualSuggestion}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                console.log('🖼️ Opening image generator with prompt:', visualSuggestion);
+                setShowImageGen(true);
+              }}
+              className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-all whitespace-nowrap"
+            >
+              <Sparkles className="w-4 h-4" />
+              Generate Image
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              console.log('🗑️ Clearing visual suggestion');
+              setVisualSuggestion('');
+            }}
+            className="text-xs text-gray-400 hover:text-gray-300 mt-2 flex items-center gap-1"
+          >
+            <X className="w-3 h-3" />
+            Clear suggestion
+          </button>
+        </div>
+      )}
+      
+      {/* Debug: Show if visualSuggestion state exists but empty */}
+      {!visualSuggestion && content.includes('[Imagem:') && (
+        <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg text-orange-300 text-sm">
+          ⚠️ <strong>Debug:</strong> Found "[Imagem:" in content but not extracted. 
+          <button
+            onClick={() => {
+              const match = content.match(/\[Imagem:\s*(.+?)\]/i);
+              if (match) {
+                setVisualSuggestion(match[1].trim());
+                setContent(content.replace(/\[Imagem:\s*.+?\]/i, '').trim());
+                console.log('🔧 Manually extracted:', match[1]);
+              }
+            }}
+            className="ml-2 px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded text-xs"
+          >
+            Extract Now
+          </button>
+        </div>
+      )}
+
       {/* Platform Selection */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-300 mb-3">Platforms</label>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-300 mb-2">Platforms</label>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {Object.entries(platformConfigs).map(([key, config]) => (
             <button
               key={key}
               onClick={() => config.enabled && togglePlatform(key as SocialMediaPlatform)}
               disabled={!config.enabled}
-              className={`p-4 rounded-xl border-2 transition-all transform ${
-                config.enabled ? 'hover:scale-105' : 'opacity-50 cursor-not-allowed'
+              className={`px-3 py-2 rounded-lg border-2 transition-all flex items-center gap-2 ${
+                config.enabled ? '' : 'opacity-50 cursor-not-allowed'
               } ${
                 selectedPlatforms.has(key as SocialMediaPlatform) && config.enabled
                   ? 'border-emerald-400 bg-emerald-400/10 text-emerald-300 shadow-lg shadow-emerald-500/20'
                   : 'border-gray-600/50 bg-gray-800/30 text-gray-400 hover:border-gray-500'
               }`}
             >
-              <div className="text-2xl mb-2">{config.icon}</div>
-              <div className="text-xs font-medium">{config.name}</div>
-              {!config.enabled && (
-                <div className="text-xs text-orange-400 mt-1">Em breve</div>
-              )}
+              <div className="text-2xl flex-shrink-0">{config.icon}</div>
+              <div className="flex-1 text-left min-w-0">
+                <div className="text-sm font-medium truncate">{config.name}</div>
+                {!config.enabled && (
+                  <div className="text-[10px] text-orange-400">Em breve</div>
+                )}
+              </div>
             </button>
           ))}
         </div>
@@ -462,6 +561,36 @@ const ManualPost: React.FC = () => {
           </>
         )}
       </button>
+
+      {/* AI Content Generator Modal */}
+      {showAI && (
+        <AIContentGenerator
+          originalContent={content}
+          userPrompt={aiPrompt}
+          onAcceptSuggestion={(newContent, visual) => {
+            setContent(newContent);
+            if (visual) {
+              setVisualSuggestion(visual);
+              console.log('🎨 Visual suggestion saved:', visual);
+            }
+          }}
+          onClose={() => setShowAI(false)}
+        />
+      )}
+
+      {/* Image Generator Modal */}
+      {showImageGen && visualSuggestion && (
+        <ImageGeneratorModal
+          prompt={visualSuggestion}
+          onAcceptImage={(imageUrl, imageFile) => {
+            setMediaUrl(imageUrl);
+            setMediaFile(imageFile);
+            setMediaType('image');
+            console.log('✅ AI-generated image attached:', imageUrl);
+          }}
+          onClose={() => setShowImageGen(false)}
+        />
+      )}
     </div>
   );
 };

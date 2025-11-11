@@ -2,6 +2,7 @@
 // Use this in API routes, server actions, cron jobs. Do NOT import in the browser.
 
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 
@@ -24,6 +25,7 @@ if (!getApps().length) {
   adminApp = getApps()[0];
 }
 
+export const adminAuth = adminApp ? getAuth(adminApp) : undefined;
 export const adminDb = adminApp ? getFirestore(adminApp) : undefined;
 export const adminStorage = adminApp ? getStorage(adminApp) : undefined;
 export default adminApp;

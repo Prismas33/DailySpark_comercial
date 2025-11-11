@@ -5,11 +5,21 @@ import ManualPost from './ManualPost';
 import SchedulePost from './SchedulePost';
 import QueueViewer from './QueueViewer';
 import Settings from './Settings';
+import UserDropdown from '@/components/UserDropdown';
+import WelcomeBanner from '@/components/WelcomeBanner';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { User } from 'firebase/auth';
 
 type TabType = 'manual' | 'schedule' | 'queue' | 'settings';
 
-const SocialMediaManager: React.FC = () => {
+interface SocialMediaManagerProps {
+  user: User;
+  onLogout: () => void;
+}
+
+const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState<TabType>('manual');
+  const isMobile = useIsMobile();
 
   const tabs = [
     { id: 'manual' as TabType, label: 'Post Now', icon: '✍️' },
@@ -35,37 +45,67 @@ const SocialMediaManager: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl p-8 mb-8 shadow-2xl shadow-emerald-500/20">
-          <div className="flex items-center space-x-4">
-            <div className="text-4xl">✨</div>
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-1">DailySpark</h1>
-              <p className="text-emerald-50 text-sm font-medium">Social Media Management Platform</p>
+      {/* Fixed Header */}
+      <div className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          {/* Mobile: 2 rows | Desktop: 1 row */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            {/* Row 1: Logo + User (always visible) */}
+            <div className="flex items-center justify-between">
+              {/* Logo */}
+              <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
+                <div className="text-xl md:text-2xl">✨</div>
+                <div>
+                  <h1 className="text-base md:text-lg font-bold text-white">DailySpark</h1>
+                  <p className="text-gray-400 text-[10px] md:text-xs hidden sm:block">Social Media Management</p>
+                </div>
+              </div>
+              
+              {/* User Dropdown (mobile: right side, desktop: far right) */}
+              <div className="flex-shrink-0 md:hidden">
+                <UserDropdown 
+                  user={user} 
+                  onLogout={onLogout}
+                  onSettingsClick={() => setActiveTab('settings')}
+                />
+              </div>
+            </div>
+            
+            {/* Row 2 (mobile) / Middle (desktop): Navigation Buttons */}
+            <div className="flex items-center gap-2 justify-center md:flex-1">
+              {tabs.filter(tab => tab.id !== 'settings').map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 py-2 px-3 rounded-lg font-medium transition-all text-sm flex-1 md:flex-none justify-center ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+                  }`}
+                >
+                  <span className="text-base md:text-lg">{tab.icon}</span>
+                  <span className="text-xs md:text-sm">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+            
+            {/* User Dropdown (desktop only - far right) */}
+            <div className="hidden md:block flex-shrink-0">
+              <UserDropdown 
+                user={user} 
+                onLogout={onLogout}
+                onSettingsClick={() => setActiveTab('settings')}
+              />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Tabs Navigation */}
-        <div className="mb-8">
-          <div className="flex overflow-x-auto no-scrollbar gap-2 bg-gray-800/50 backdrop-blur-sm p-2 rounded-2xl border border-gray-700/50 shadow-xl">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 sm:flex-[unset] min-w-[120px] flex items-center justify-center gap-2 py-3 md:py-4 px-4 md:px-6 rounded-xl font-semibold transition-all transform ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30 scale-105'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-                }`}
-              >
-                <span className="text-xl">{tab.icon}</span>
-                <span className="text-sm lg:text-base whitespace-nowrap">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
+        {/* Welcome Banner - only show on manual/schedule tabs, not on settings */}
+        {(activeTab === 'manual' || activeTab === 'schedule' || activeTab === 'queue') && (
+          <WelcomeBanner user={user} />
+        )}
 
         {/* Active Tab Content */}
         <div className="transition-all duration-300 ease-in-out">
@@ -73,10 +113,11 @@ const SocialMediaManager: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-12 text-center text-gray-500 text-sm">
+        <div className="mt-8 md:mt-12 text-center text-gray-500 text-xs md:text-sm pb-4">
           <p className="flex items-center justify-center gap-2">
             <span className="text-emerald-400">✨</span>
-            DailySpark - Streamline your social media presence
+            <span className="hidden sm:inline">DailySpark - Streamline your social media presence</span>
+            <span className="sm:hidden">DailySpark</span>
             <span className="text-emerald-400">✨</span>
           </p>
         </div>

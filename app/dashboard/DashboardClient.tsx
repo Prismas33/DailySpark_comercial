@@ -3,18 +3,21 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SocialMediaManager from '@/components/SocialMediaManager/SocialMediaManager';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import UserDropdown from '@/components/UserDropdown';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 
 export default function DashboardClient() {
   const router = useRouter();
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [auth, setAuth] = useState<any>(null);
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
     (async () => {
-      const { auth } = await import('@/lib/firebase');
-      unsub = onAuthStateChanged(auth, (user) => {
+      const { auth: firebaseAuth } = await import('@/lib/firebase');
+      setAuth(firebaseAuth);
+      unsub = onAuthStateChanged(firebaseAuth, (user) => {
         setFirebaseUser(user);
         setLoading(false);
         if (!user) {
@@ -24,6 +27,17 @@ export default function DashboardClient() {
     })();
     return () => { if (unsub) unsub(); };
   }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      if (auth) {
+        await signOut(auth);
+        router.push('/auth/signin');
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -40,5 +54,5 @@ export default function DashboardClient() {
     return null; // Will redirect
   }
 
-  return <SocialMediaManager />;
+  return <SocialMediaManager user={firebaseUser} onLogout={handleLogout} />;
 }
