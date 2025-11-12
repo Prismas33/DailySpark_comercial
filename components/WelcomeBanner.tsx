@@ -1,11 +1,13 @@
 'use client';
 
 import React from 'react';
+// 🎭 DEMO MODE: Support both Firebase User and MockUser
 import { User } from 'firebase/auth';
+import { MockUser } from '@/lib/mockAuth';
 import { Sparkles, Calendar } from 'lucide-react';
 
 interface WelcomeBannerProps {
-  user: User;
+  user: User | MockUser;
 }
 
 export default function WelcomeBanner({ user }: WelcomeBannerProps) {

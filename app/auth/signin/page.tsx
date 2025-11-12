@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+// 🎭 DEMO MODE: Original Firebase import commented, using mock instead
+// import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { mockSignInWithEmailAndPassword, mockOnAuthStateChanged, isDemoMode } from '@/lib/mockAuth';
 export const dynamic = 'force-dynamic';
 
 export default function SignIn() {
@@ -10,22 +12,37 @@ export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [demoMode] = useState(isDemoMode());
   const router = useRouter();
 
   useEffect(() => {
-    // Check if already signed in via Firebase
+    // Check if already signed in
     (async () => {
-      const { auth } = await import('@/lib/firebase');
-      const unsub = onAuthStateChanged(auth, (user) => {
-        if (user) {
-          router.push('/dashboard');
-        } else {
-          setLoading(false);
-        }
-      });
-      return () => unsub();
+      if (demoMode) {
+        // 🎭 DEMO MODE: Use mock auth
+        const unsub = mockOnAuthStateChanged((user) => {
+          if (user) {
+            router.push('/dashboard');
+          } else {
+            setLoading(false);
+          }
+        });
+        return () => unsub();
+      } else {
+        // Original Firebase code (commented for demo)
+        // const { auth } = await import('@/lib/firebase');
+        // const unsub = onAuthStateChanged(auth, (user) => {
+        //   if (user) {
+        //     router.push('/dashboard');
+        //   } else {
+        //     setLoading(false);
+        //   }
+        // });
+        // return () => unsub();
+        setLoading(false);
+      }
     })();
-  }, [router]);
+  }, [router, demoMode]);
 
   if (loading) {
     return (
@@ -38,6 +55,20 @@ export default function SignIn() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
+        {/* 🎭 DEMO MODE BANNER */}
+        {demoMode && (
+          <div className="mb-6 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 rounded-xl p-4 text-center animate-pulse">
+            <div className="flex items-center justify-center space-x-2 text-white font-semibold">
+              <span className="text-2xl">🎭</span>
+              <span>DEMO MODE</span>
+              <span className="text-2xl">🎭</span>
+            </div>
+            <p className="text-white text-xs mt-1 opacity-90">
+              Use any email and password to login
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="bg-gradient-to-r from-orange-400 via-amber-500 to-yellow-500 rounded-xl p-6 mb-6 shadow-lg">
@@ -50,7 +81,9 @@ export default function SignIn() {
             </div>
           </div>
           <h2 className="text-xl font-semibold text-white mb-2">Sign in to your account</h2>
-          <p className="text-gray-400">Enter your credentials to continue</p>
+          <p className="text-gray-400">
+            {demoMode ? 'Try the demo with any credentials!' : 'Enter your credentials to continue'}
+          </p>
         </div>
 
         {/* Email/Password */}
@@ -78,11 +111,19 @@ export default function SignIn() {
               onClick={async () => {
                 setError(null);
                 try {
-                  const { auth } = await import('@/lib/firebase');
-                  await signInWithEmailAndPassword(auth, email, password);
-                  router.push('/dashboard');
+                  if (demoMode) {
+                    // 🎭 DEMO MODE: Use mock authentication
+                    await mockSignInWithEmailAndPassword(email, password);
+                    router.push('/dashboard');
+                  } else {
+                    // Original Firebase code (commented for demo)
+                    // const { auth } = await import('@/lib/firebase');
+                    // await signInWithEmailAndPassword(auth, email, password);
+                    // router.push('/dashboard');
+                    setError('Demo mode only. Real authentication disabled.');
+                  }
                 } catch (err: any) {
-                  const code = err?.code || '';
+                  const code = err?.message || err?.code || '';
                   if (code.includes('invalid-credential') || code.includes('wrong-password')) setError('Invalid credentials');
                   else if (code.includes('user-not-found')) setError('User not found');
                   else setError('Sign in failed');

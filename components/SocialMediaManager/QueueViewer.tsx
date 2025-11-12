@@ -43,6 +43,27 @@ const QueueViewer: React.FC = () => {
   const loadQueue = async () => {
     setLoading(true);
     try {
+      // 🎭 DEMO MODE: Check if in demo mode
+      const { isDemoMode } = await import('@/lib/mockAuth');
+      
+      if (isDemoMode()) {
+        // 🎭 DEMO MODE: Load mock data
+        const { mockScheduledPosts } = await import('@/lib/mockData');
+        const mockQueue = mockScheduledPosts.map(post => ({
+          id: post.id,
+          content: post.content,
+          platforms: post.platform,
+          imageUrl: post.imageUrl,
+          scheduledAt: post.scheduledFor.toISOString(),
+          status: post.status,
+          createdAt: new Date().toISOString(),
+        }));
+        setPosts(mockQueue);
+        setLoading(false);
+        return;
+      }
+
+      // Original code for production
       // Try cache first
       const cachedQueue = CacheService.get<QueuedPost[]>(CACHE_KEYS.SOCIAL_QUEUE);
       if (cachedQueue) {

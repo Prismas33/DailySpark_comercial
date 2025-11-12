@@ -8,12 +8,14 @@ import Settings from './Settings';
 import UserDropdown from '@/components/UserDropdown';
 import WelcomeBanner from '@/components/WelcomeBanner';
 import { useIsMobile } from '@/hooks/useIsMobile';
+// 🎭 DEMO MODE: Support both Firebase User and MockUser
 import { User } from 'firebase/auth';
+import { MockUser } from '@/lib/mockAuth';
 
 type TabType = 'manual' | 'schedule' | 'queue' | 'settings';
 
 interface SocialMediaManagerProps {
-  user: User;
+  user: User | MockUser;
   onLogout: () => void;
 }
 
@@ -45,8 +47,17 @@ const SocialMediaManager: React.FC<SocialMediaManagerProps> = ({ user, onLogout 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+      {/* 🎭 DEMO MODE BANNER */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 text-white text-center py-2 px-4 shadow-lg">
+        <div className="flex items-center justify-center space-x-2 text-sm font-semibold animate-pulse">
+          <span className="text-lg">🎭</span>
+          <span>DEMO MODE - All data is simulated</span>
+          <span className="text-lg">🎭</span>
+        </div>
+      </div>
+
       {/* Fixed Header */}
-      <div className="sticky top-0 z-40 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
+      <div className="sticky top-10 z-40 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-3">
           {/* Mobile: 2 rows | Desktop: 1 row */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">

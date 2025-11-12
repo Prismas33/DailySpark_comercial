@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+// 🎭 DEMO MODE: Support both Firebase User and MockUser
 import { User } from 'firebase/auth';
+import { MockUser } from '@/lib/mockAuth';
 
 interface UserDropdownProps {
-  user: User;
+  user: User | MockUser;
   onLogout: () => void;
   onSettingsClick?: () => void;
 }

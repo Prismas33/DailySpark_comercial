@@ -24,9 +24,26 @@ export default function ImageGeneratorModal({
     setError(null);
 
     try {
+      // 🎭 DEMO MODE: Check if in demo mode
+      const { isDemoMode } = await import('@/lib/mockAuth');
+      
+      if (isDemoMode()) {
+        // 🎭 DEMO MODE: Simulate image generation
+        console.log('🎨 🎭 Mock: Generating image with prompt:', prompt);
+        const { mockGenerateAIImage } = await import('@/lib/mockData');
+        const mockImageUrl = await mockGenerateAIImage(prompt);
+        
+        setImageUrl(mockImageUrl);
+        setRevisedPrompt(prompt); // In demo, use the same prompt
+        console.log('✅ 🎭 Mock image generated:', mockImageUrl);
+        setLoading(false);
+        return;
+      }
+
+      // Original code for production
       // Get Firebase auth token
       const { auth } = await import('@/lib/firebase');
-      const user = auth.currentUser;
+      const user = auth?.currentUser;
       
       if (!user) {
         throw new Error('You must be signed in to use AI features');
@@ -48,13 +65,15 @@ export default function ImageGeneratorModal({
       const data = await response.json();
       
       if (!response.ok) {
-        if (response.status === 429 || data.rateLimit) {
-          throw new Error(data.error || 'Rate limit reached. Check your OpenAI billing.');
+        // Show specific OpenAI error message
+        let errorMsg = data.error || 'Failed to generate image';
+        
+        // Add extra details if available
+        if (data.errorDetails) {
+          errorMsg += `\n\nDetalhes: ${data.errorDetails}`;
         }
-        if (data.contentPolicy) {
-          throw new Error(data.error || 'Content policy violation. Try rephrasing your prompt.');
-        }
-        throw new Error(data.error || 'Failed to generate image');
+        
+        throw new Error(errorMsg);
       }
       
       if (data.success && data.imageUrl) {
@@ -140,7 +159,7 @@ export default function ImageGeneratorModal({
               <span>⚠️</span>
               <div className="flex-1">
                 <p className="font-medium mb-1">Generation Failed</p>
-                <p>{error}</p>
+                <p className="whitespace-pre-line">{error}</p>
               </div>
             </div>
           )}

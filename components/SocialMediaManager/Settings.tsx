@@ -6,6 +6,8 @@ import ProfileSection from './SettingsSections/ProfileSection';
 import SecuritySection from './SettingsSections/SecuritySection';
 import AIConfigSection from './SettingsSections/AIConfigSection';
 import PlatformsSection from './SettingsSections/PlatformsSection';
+// 🎭 DEMO MODE: Use mock auth instead of Firebase
+import { getMockCurrentUser, isDemoMode } from '@/lib/mockAuth';
 
 export default function Settings() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -14,8 +16,15 @@ export default function Settings() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const { auth } = await import('@/lib/firebase');
-        setCurrentUser(auth.currentUser);
+        if (isDemoMode()) {
+          // 🎭 DEMO MODE: Get mock user
+          const mockUser = getMockCurrentUser();
+          setCurrentUser(mockUser);
+        } else {
+          // Original Firebase code
+          const { auth } = await import('@/lib/firebase');
+          setCurrentUser(auth?.currentUser || null);
+        }
       } catch (error) {
         console.error('Failed to load user:', error);
       } finally {

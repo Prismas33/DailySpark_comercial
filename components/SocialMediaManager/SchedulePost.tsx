@@ -34,8 +34,8 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
   const platforms = [
     { id: 'linkedin' as Platform, name: 'LinkedIn', icon: '💼', enabled: true },
     { id: 'x' as Platform, name: 'X (Twitter)', icon: '𝕏', enabled: true },
-    { id: 'facebook' as Platform, name: 'Facebook', icon: '📘', enabled: false },
-    { id: 'instagram' as Platform, name: 'Instagram', icon: '📸', enabled: false }
+    { id: 'facebook' as Platform, name: 'Facebook', icon: '📘', enabled: true },
+    { id: 'instagram' as Platform, name: 'Instagram', icon: '📸', enabled: true }
   ];
 
   // Horários em que as funções executam (UTC)
@@ -73,6 +73,25 @@ const SchedulePost: React.FC<SchedulePostProps> = ({ onSuccess }) => {
     setMessage(null);
 
     try {
+      // 🎭 DEMO MODE: Check if in demo mode
+      const { isDemoMode } = await import('@/lib/mockAuth');
+      
+      if (isDemoMode()) {
+        // 🎭 DEMO MODE: Simulate scheduling
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+        setMessage({ type: 'success', text: '🎭 Demo: Post scheduled successfully!' });
+        // Reset form
+        setContent('');
+        setScheduledDate('');
+        setScheduledTime('');
+        setMediaUrl('');
+        setPostType('post');
+        onSuccess?.();
+        setLoading(false);
+        return;
+      }
+
+      // Original code for production
       // Combinar data e hora em ISO
       const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
 

@@ -17,8 +17,8 @@ interface PlatformConfig {
 const platformConfigs: Record<SocialMediaPlatform, PlatformConfig> = {
   linkedin: { name: 'LinkedIn', icon: '💼', enabled: true },
   x: { name: 'X (Twitter)', icon: '𝕏', enabled: true },
-  facebook: { name: 'Facebook', icon: '📘', enabled: false },
-  instagram: { name: 'Instagram', icon: '📸', enabled: false }
+  facebook: { name: 'Facebook', icon: '📘', enabled: true },
+  instagram: { name: 'Instagram', icon: '📸', enabled: true }
 };
 
 const ManualPost: React.FC = () => {
@@ -265,6 +265,23 @@ const ManualPost: React.FC = () => {
     setSending(true);
     setMessage(null);
     try {
+      // 🎭 DEMO MODE: Check if in demo mode
+      const { isDemoMode } = await import('@/lib/mockAuth');
+      
+      if (isDemoMode()) {
+        // 🎭 DEMO MODE: Simulate posting
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+        setMessage({ type: 'success', text: '🎭 Demo: Post published successfully!' });
+        setContent("");
+        setMediaUrl("");
+        setMediaFile(null);
+        setMediaType(null);
+        setValidationWarnings([]);
+        setSending(false);
+        return;
+      }
+
+      // Original code for production
       const response = await fetch('/api/socialMediaManualPost', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -447,8 +464,8 @@ const ManualPost: React.FC = () => {
               }`}
             >
               <div className="text-2xl mb-1">📄</div>
-              <div className="text-sm font-medium">Post Normal</div>
-              <div className="text-xs text-gray-500 mt-1">Imagem ou vídeo</div>
+              <div className="text-sm font-medium">Normal Post</div>
+              <div className="text-xs text-gray-500 mt-1">Image or video</div>
             </button>
             <button
               onClick={() => setPostType('reel')}
@@ -460,7 +477,7 @@ const ManualPost: React.FC = () => {
             >
               <div className="text-2xl mb-1">🎬</div>
               <div className="text-sm font-medium">Reel</div>
-              <div className="text-xs text-gray-500 mt-1">Apenas vídeo 9:16</div>
+              <div className="text-xs text-gray-500 mt-1">Video 9:16 only</div>
             </button>
           </div>
         </div>

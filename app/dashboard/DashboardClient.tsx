@@ -3,36 +3,56 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SocialMediaManager from '@/components/SocialMediaManager/SocialMediaManager';
-import UserDropdown from '@/components/UserDropdown';
-import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+// 🎭 DEMO MODE: Original Firebase import commented, using mock instead
+// import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { mockOnAuthStateChanged, mockSignOut, MockUser, isDemoMode } from '@/lib/mockAuth';
 
 export default function DashboardClient() {
   const router = useRouter();
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<MockUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [auth, setAuth] = useState<any>(null);
+  const [demoMode] = useState(isDemoMode());
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
     (async () => {
-      const { auth: firebaseAuth } = await import('@/lib/firebase');
-      setAuth(firebaseAuth);
-      unsub = onAuthStateChanged(firebaseAuth, (user) => {
-        setFirebaseUser(user);
-        setLoading(false);
-        if (!user) {
-          router.push('/auth/signin');
-        }
-      });
+      if (demoMode) {
+        // 🎭 DEMO MODE: Use mock authentication
+        unsub = mockOnAuthStateChanged((user) => {
+          setFirebaseUser(user);
+          setLoading(false);
+          if (!user) {
+            router.push('/auth/signin');
+          }
+        });
+      } else {
+        // Original Firebase code (commented for demo)
+        // const { auth: firebaseAuth } = await import('@/lib/firebase');
+        // unsub = onAuthStateChanged(firebaseAuth, (user) => {
+        //   setFirebaseUser(user);
+        //   setLoading(false);
+        //   if (!user) {
+        //     router.push('/auth/signin');
+        //   }
+        // });
+        router.push('/auth/signin');
+      }
     })();
     return () => { if (unsub) unsub(); };
-  }, [router]);
+  }, [router, demoMode]);
 
   const handleLogout = async () => {
     try {
-      if (auth) {
-        await signOut(auth);
+      if (demoMode) {
+        // 🎭 DEMO MODE: Use mock sign out
+        await mockSignOut();
         router.push('/auth/signin');
+      } else {
+        // Original Firebase code (commented for demo)
+        // if (auth) {
+        //   await signOut(auth);
+        //   router.push('/auth/signin');
+        // }
       }
     } catch (error) {
       console.error('Logout error:', error);
