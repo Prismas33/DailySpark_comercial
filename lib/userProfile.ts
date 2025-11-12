@@ -22,6 +22,12 @@ export async function uploadProfilePhoto(user: User, file: File): Promise<string
     throw new Error('File size must be less than 5MB');
   }
 
+  // 🎭 DEMO MODE: Return mock photo URL
+  const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+  if (isDemoMode || !storage) {
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}&size=200&background=10b981&color=fff`;
+  }
+
   const storageRef = ref(storage, `users/${user.uid}/profile.jpg`);
   await uploadBytes(storageRef, file);
   const photoURL = await getDownloadURL(storageRef);

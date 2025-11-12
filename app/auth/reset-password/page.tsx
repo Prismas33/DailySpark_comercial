@@ -24,10 +24,22 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      const { auth } = await import('@/lib/firebase');
-      await sendPasswordResetEmail(auth, email);
-      setSuccess('Password reset email sent! Check your inbox.');
-      setTimeout(() => router.push('/auth/signin'), 2000);
+      // 🎭 DEMO MODE: Mock password reset
+      const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+      
+      if (isDemoMode) {
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setSuccess('🎭 DEMO: Password reset email sent! Check your inbox.');
+        setTimeout(() => router.push('/auth/signin'), 2000);
+      } else {
+        // Original Firebase implementation
+        const { auth } = await import('@/lib/firebase');
+        if (!auth) throw new Error('Firebase not initialized');
+        await sendPasswordResetEmail(auth, email);
+        setSuccess('Password reset email sent! Check your inbox.');
+        setTimeout(() => router.push('/auth/signin'), 2000);
+      }
     } catch (err: any) {
       const code = err?.code || '';
       if (code.includes('user-not-found')) setError('User not found');
